@@ -1,0 +1,52 @@
+name: CI/CD - build, push e deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Java
+        uses: actions/setup-java@v6
+        with:
+          java-version: "25"
+
+      - name: Build da aplicação
+        run: ./gradlew clean build
+
+      - name: Rodar testes
+        run: ./gradlew clean test
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login no registry
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_SERVER }} -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+      - name: Build
+        run: docker build -t ${{ secrets.REGISTRY_SERVER }}/turma-api/pedidos-api:${{ github.sha }} .
+
+      - name: Push
+        run: docker push ${{ secrets.REGISTRY_SERVER }}/turma-api/pedidos-api:${{ github.sha }}
+
+      - name: Configurar kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > kubeconfig.yaml
+          echo "KUBECONFIG=$PWD/kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Set image address
+        run: sed -i "s|DOCKER_IMAGE_PLACEHOLDER|${{ secrets.REGISTRY_SERVER }}/turma-api/pedidos-api:${{ github.sha }}|g" k3s/app-purchase-transaction.yml
+
+      - name: Deploy
+        run: |
+          kubectl apply k3s/app-purchase-transaction.yml
+
