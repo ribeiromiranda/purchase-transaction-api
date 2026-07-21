@@ -137,3 +137,6 @@ curl -i "http://localhost:8080/api/transactions/{id}/convert?currency=EUR"
 
 - H2 is configured in-memory (`jdbc:h2:mem`), so data is lost when the application restarts.
 - If the conversion endpoint returns an exchange-rate error, verify Treasury API connectivity and data availability for the requested currency/date.
+
+## LICENSE
+
