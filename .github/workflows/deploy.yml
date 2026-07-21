@@ -49,5 +49,5 @@ jobs:
 
       - name: Deploy
         run: |
-          kubectl apply k3s/app-purchase-transaction.yml
+          kubectl apply -f k3s/app-purchase-transaction.yml
 
